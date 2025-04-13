@@ -67,7 +67,7 @@ jobs:
       name: ${{ inputs.TF_ENVIRONMENT }}
     steps:
       - name: Clone Infrastructure Repository
-        run: git clone --branch main https://github.com/madilshahzad/infrastructure-provisioning.git
+        run: git clone --branch main https://github.com/madnansystems87/infrastructure-webapp.git
 
       - name: Install tfsec
         run: |
