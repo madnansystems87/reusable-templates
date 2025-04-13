@@ -148,13 +148,13 @@ jobs:
       - name: Terraform Plan
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          cd ./infrastructure-provisioning
+          cd ./infrastructure-webapp
           terraform plan -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
 
       - name: Terraform Apply
         if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT != 'prod' }}
         run: |
-          cd ./infrastructure-provisioning
+          cd ./infrastructure-webapp
           terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars -auto-approve
 
       - name: Manual Approval for Production
@@ -166,5 +166,5 @@ jobs:
       - name: Terraform Apply for Production
         if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
         run: |
-          cd ./infrastructure-provisioning
+          cd ./infrastructure-webapp
           terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
