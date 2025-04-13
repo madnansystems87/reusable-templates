@@ -71,8 +71,8 @@ jobs:
 
       - name: Generate `prod.tfvars` File
         run: |
-          mkdir -p ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}
-          cat > ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars <<'EOF'
+          mkdir -p ./infrastructure-webapp/terraform/environments/${{ inputs.TF_ENVIRONMENT }}
+          cat > ./infrastructure-webapp/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars <<'EOF'
           node_role_arn      = "${{ secrets.NODE_ROLE_ARN }}"
           master_role_arn    = "${{ secrets.MASTER_ROLE_ARN }}"
           key_name           = "${{ secrets.KEY_NAME }}"
@@ -102,12 +102,12 @@ jobs:
 
       - name: Verify `prod.tfvars` File
         run: |
-          if [ ! -f "./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars" ]; then
+          if [ ! -f "./infrastructure-webapp/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars" ]; then
             echo "Error: prod.tfvars file is missing!"
             exit 1
           else
             echo "prod.tfvars file exists:"
-            cat ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
+            cat ./infrastructure-webapp/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
           fi
 
       - name: Configure AWS Credentials
@@ -121,7 +121,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd ./infrastructure-provisioning
+          cd ./infrastructure-webapp
           terraform init \
             -backend-config="region=${{ secrets.S3_AWS_REGION }}" \
             -backend-config="bucket=${{ secrets.TF_STATE_S3_BUCKET }}" \
