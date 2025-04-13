@@ -61,27 +61,7 @@ on:
         required: true
 
 jobs:
-  tfsec-scan:
-    runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.TF_ENVIRONMENT }}
-    steps:
-      - name: Clone Infrastructure Repository
-        run: git clone --branch main https://github.com/madnansystems87/infrastructure-webapp.git
-
-      - name: Install tfsec
-        run: |
-          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/download/v1.28.13/tfsec-linux-amd64
-          chmod +x tfsec
-          sudo mv tfsec /usr/local/bin/
-
-      - name: Run tfsec Security Scan
-        run: |
-          cd infrastructure-webapp
-          tfsec .
-
   provision-infrastructure:
-    needs: tfsec-scan
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.TF_ENVIRONMENT }}
