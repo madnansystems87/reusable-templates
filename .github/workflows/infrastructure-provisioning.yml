@@ -129,25 +129,25 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
 
       - name: Terraform Plan
-        if: ${{ github.event_name == 'pull_request' }}
+        #if: ${{ github.event_name == 'pull_request' }}
         run: |
           cd ./infrastructure-webapp
           terraform plan -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
 
       - name: Terraform Apply
-        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT != 'prod' }}
+        #if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT != 'prod' }}
         run: |
           cd ./infrastructure-webapp
           terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars -auto-approve
 
-      - name: Manual Approval for Production
-        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
-        uses: hmarr/auto-approve-action@v2
-        with:
-          github-token: ${{ secrets.PAT }}
+      # - name: Manual Approval for Production
+      #   if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
+      #   uses: hmarr/auto-approve-action@v2
+      #   with:
+      #     github-token: ${{ secrets.PAT }}
 
-      - name: Terraform Apply for Production
-        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
-        run: |
-          cd ./infrastructure-webapp
-          terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
+      # - name: Terraform Apply for Production
+      #   if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
+      #   run: |
+      #     cd ./infrastructure-webapp
+      #     terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
