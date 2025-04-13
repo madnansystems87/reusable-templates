@@ -77,7 +77,7 @@ jobs:
 
       - name: Run tfsec Security Scan
         run: |
-          cd infrastructure-provisioning
+          cd infrastructure-webapp
           tfsec .
 
   provision-infrastructure:
