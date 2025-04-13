@@ -71,7 +71,7 @@ jobs:
 
       - name: Install tfsec
         run: |
-          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64
+          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/download/v1.28.13/tfsec-linux-amd64
           echo "2c7418f15e1f92b209dcdf2f97e3aef4b79b0f946d04df9ff8b5f56d4b4a2e1f  tfsec" | sha256sum -c -
           chmod +x tfsec
           sudo mv tfsec /usr/local/bin/
