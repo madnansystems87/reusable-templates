@@ -1,0 +1,171 @@
+name: Provision Infrastructure for the Application
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_call:
+    inputs:
+      TF_ENVIRONMENT:
+        description: Terraform environment (e.g., dev, prod)
+        required: true
+        type: string
+      ROLE_NAME:
+        description: Role name to assume
+        required: true
+        type: string
+    secrets:
+      AWS_REGION:
+        required: true
+      S3_AWS_REGION:
+        required: true
+      TF_STATE_S3_BUCKET:
+        required: true
+      TF_STATE_FILE_KEY:
+        required: true
+      TF_STATE_DYNAMODB_TABLE:
+        required: true
+      AWS_ACCOUNT_ID:
+        required: true
+      NODE_ROLE_ARN:
+        required: true
+      MASTER_ROLE_ARN:
+        required: true
+      KEY_NAME:
+        required: true
+      USER_1_ARN:
+        required: true
+      USER_1_USERNAME:
+        required: true
+      USER_2_ARN:
+        required: true
+      USER_2_USERNAME:
+        required: true
+      CLUSTER_NAME:
+        required: true
+      CLUSTER_VERSION:
+        required: true
+      NODE_GROUP_NAME:
+        required: true
+      VPC_NAME:
+        required: true
+      BASTION_NAME:
+        required: true
+      KUBECONFIG_PATH:
+        required: true
+      CLUSTER_ALIAS:
+        required: true
+      AWS_Access_ROLE_ARN:
+        required: true
+
+jobs:
+  tfsec-scan:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.TF_ENVIRONMENT }}
+    steps:
+      - name: Clone Infrastructure Repository
+        run: git clone --branch main https://github.com/madilshahzad/infrastructure-provisioning.git
+
+      - name: Install tfsec
+        run: |
+          curl -Lo tfsec https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64
+          echo "2c7418f15e1f92b209dcdf2f97e3aef4b79b0f946d04df9ff8b5f56d4b4a2e1f  tfsec" | sha256sum -c -
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
+
+      - name: Run tfsec Security Scan
+        run: |
+          cd infrastructure-provisioning
+          tfsec .
+
+  provision-infrastructure:
+    needs: tfsec-scan
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.TF_ENVIRONMENT }}
+    steps:
+      - name: Clone Infrastructure Repository
+        run: git clone --branch main https://github.com/madilshahzad/infrastructure-provisioning.git
+
+      - name: Generate `prod.tfvars` File
+        run: |
+          mkdir -p ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}
+          cat > ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars <<'EOF'
+          node_role_arn      = "${{ secrets.NODE_ROLE_ARN }}"
+          master_role_arn    = "${{ secrets.MASTER_ROLE_ARN }}"
+          key_name           = "${{ secrets.KEY_NAME }}"
+          users = [
+            {
+              user_arn = "${{ secrets.USER_1_ARN }}"
+              username = "${{ secrets.USER_1_USERNAME }}"
+              groups   = ["system:masters"]
+            },
+            {
+              user_arn = "${{ secrets.USER_2_ARN }}"
+              username = "${{ secrets.USER_2_USERNAME }}"
+              groups   = ["system:masters"]
+            }
+          ]
+          cluster_name       = "${{ secrets.CLUSTER_NAME }}"
+          cluster_version    = "${{ secrets.CLUSTER_VERSION }}"
+          node_group_name    = "${{ secrets.NODE_GROUP_NAME }}"
+          environment        = "${{ inputs.TF_ENVIRONMENT }}"
+          vpc_name           = "${{ secrets.VPC_NAME }}"
+          bastion_name       = "${{ secrets.BASTION_NAME }}"
+          kubeconfig_path    = "${{ secrets.KUBECONFIG_PATH }}"
+          region             = "${{ secrets.AWS_REGION }}"
+          cluster_alias      = "${{ secrets.CLUSTER_ALIAS }}"
+          aws_access_role    = "${{ secrets.AWS_Access_ROLE_ARN }}"
+          EOF
+
+      - name: Verify `prod.tfvars` File
+        run: |
+          if [ ! -f "./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars" ]; then
+            echo "Error: prod.tfvars file is missing!"
+            exit 1
+          else
+            echo "prod.tfvars file exists:"
+            cat ./infrastructure-provisioning/terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
+          fi
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ inputs.ROLE_NAME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: |
+          cd ./infrastructure-provisioning
+          terraform init \
+            -backend-config="region=${{ secrets.S3_AWS_REGION }}" \
+            -backend-config="bucket=${{ secrets.TF_STATE_S3_BUCKET }}" \
+            -backend-config="key=${{ inputs.TF_ENVIRONMENT }}/${{ secrets.TF_STATE_FILE_KEY }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+      - name: Terraform Plan
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          cd ./infrastructure-provisioning
+          terraform plan -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
+
+      - name: Terraform Apply
+        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT != 'prod' }}
+        run: |
+          cd ./infrastructure-provisioning
+          terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars -auto-approve
+
+      - name: Manual Approval for Production
+        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
+        uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.PAT }}
+
+      - name: Terraform Apply for Production
+        if: ${{ github.event_name != 'pull_request' && inputs.TF_ENVIRONMENT == 'prod' }}
+        run: |
+          cd ./infrastructure-provisioning
+          terraform apply -var-file=./terraform/environments/${{ inputs.TF_ENVIRONMENT }}/prod.tfvars
