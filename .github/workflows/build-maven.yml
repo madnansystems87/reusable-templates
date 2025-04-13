@@ -1,0 +1,53 @@
+name: Maven Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      CODE_REPO:
+        description: 'Repository name'
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  maven-build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.CODE_REPO }}
+
+      # Set up JDK 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Cache Maven dependencies to speed up builds
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ hashFiles('**/mvnw') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Build the Maven project, skipping tests to focus on compilation and packaging
+      - name: Build with Maven
+        run: mvn clean install -DskipTests=true
+
+      # Run tests separately for better visibility of test results
+      - name: Run tests with Maven
+        run: mvn test
+
+      # Upload built JAR file as an artifact only if the build is successful
+      - name: Upload JAR artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-jar
+          path: target/*.jar
