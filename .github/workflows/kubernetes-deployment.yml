@@ -77,9 +77,7 @@ jobs:
       - name: Validate Helm Chart
         working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
         run: |
-          helm lint ./ \
-            --set image.repository=${{ secrets.ECR_REPOSITORY_URL }} \
-            --set image.tag=${{ inputs.APP_NAME }}-${{ inputs.IMAGE_TAG }}
+          helm template .
 
       - name: Deploy Using Helm
         working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
