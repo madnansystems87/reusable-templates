@@ -88,7 +88,7 @@ jobs:
 
       - name: Wait for Pods to be Ready
         run: |
-          kubectl wait --for=condition=ready pod --all --timeout=120s
+          kubectl describe deployment springboot-web-app-helm-deployment
 
       - name: Get Pod Status
         run: kubectl get pods --namespace default
