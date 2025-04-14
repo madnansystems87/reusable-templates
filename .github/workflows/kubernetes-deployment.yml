@@ -66,21 +66,21 @@ jobs:
 
       - name: Clone Helm Chart Repository
         run: |
-          git clone --branch main https://github.com/madnansystems87/helm-deployment.git
+          git clone --branch main https://github.com/madnansystems87/helm-deployments.git
           echo "Cloned Helm Chart Repository"
 
       - name: Navigate to Helm Chart Directory
-        working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
+        working-directory: ./helm-deployments/${{ inputs.HELM_CHART_PATH }}
         run: |
           echo "Navigated to Helm Chart Directory"
 
       - name: Validate Helm Chart
-        working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
+        working-directory: ./helm-deployments/${{ inputs.HELM_CHART_PATH }}
         run: |
           helm template .
 
       - name: Deploy Using Helm
-        working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
+        working-directory: ./helm-deployments/${{ inputs.HELM_CHART_PATH }}
         run: |
           helm upgrade --install ${{ inputs.HELM_RELEASE_NAME }} ./ \
             --set image.repository=${{ secrets.ECR_REPOSITORY_URL }} \
