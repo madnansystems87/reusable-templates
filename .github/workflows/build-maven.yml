@@ -47,7 +47,7 @@ jobs:
       # Upload built JAR file as an artifact only if the build is successful
       - name: Upload JAR artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: app-jar
           path: target/*.jar
