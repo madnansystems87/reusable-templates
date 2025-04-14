@@ -75,7 +75,7 @@ jobs:
           echo "Navigated to Helm Chart Directory"
 
       - name: Validate Helm Chart
-        working-directory: ./helm_charts/${{ inputs.HELM_CHART_PATH }}
+        working-directory: ./helm-deployment/${{ inputs.HELM_CHART_PATH }}
         run: |
           helm lint ./ \
             --set image.repository=${{ secrets.ECR_REPOSITORY_URL }} \
